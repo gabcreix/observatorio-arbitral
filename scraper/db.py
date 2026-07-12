@@ -3,9 +3,15 @@ import os
 from pathlib import Path
 
 import psycopg
+from dotenv import load_dotenv
 from psycopg.types.json import Jsonb
 
 _SQL_DIR = Path(__file__).parent / "sql"
+
+# Carga .env (raíz del repo) si existe, para no depender de variables de
+# entorno declaradas a mano en cada terminal. .env está en .gitignore: nunca
+# se commitea (bloque 5, §3.2 — sin fichero de secretos en el repo).
+load_dotenv()
 
 
 def get_conn() -> psycopg.Connection:
