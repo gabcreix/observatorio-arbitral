@@ -83,14 +83,23 @@ def fetch_and_extract(match: dict) -> FetchResult:
     return FetchResult(slug, url, response.status_code, response.text, blobs or None, method, None)
 
 
-def ingest_one(match: dict, *, conn) -> None:
+def ingest_one(match: dict) -> None:
+    # Conexión nueva por partido, no una compartida para todo el backfill:
+    # Neon (serverless) puede cerrar una conexión mantenida abierta muchos
+    # minutos a mitad de una tirada larga (visto en producción sobre 380
+    # partidos). Con upsert por clave natural, abrir/cerrar por partido no
+    # tiene coste real y hace que un fallo de un partido no tumbe los demás.
     result = fetch_and_extract(match)
-    db.upsert_bronze(
-        conn, fuente=FUENTE, natural_key=result.slug, source_url=result.url,
-        http_status=result.status, raw_html=result.raw_html,
-        payload_json=result.payload_json, extraction_method=result.extraction_method,
-        error=result.error,
-    )
+    conn = db.get_conn()
+    try:
+        db.upsert_bronze(
+            conn, fuente=FUENTE, natural_key=result.slug, source_url=result.url,
+            http_status=result.status, raw_html=result.raw_html,
+            payload_json=result.payload_json, extraction_method=result.extraction_method,
+            error=result.error,
+        )
+    finally:
+        conn.close()
 
 
 def dry_run(matches: list[dict], output_dir: Path) -> None:
@@ -147,11 +156,14 @@ def main(argv: list[str] | None = None) -> None:
         dry_run(matches, args.output_dir)
         return
 
-    conn = db.get_conn()
-    db.ensure_bronze_table(conn)
+    setup_conn = db.get_conn()
+    try:
+        db.ensure_bronze_table(setup_conn)
+    finally:
+        setup_conn.close()
+
     for match in matches:
-        ingest_one(match, conn=conn)
-    conn.close()
+        ingest_one(match)
 
 
 if __name__ == "__main__":
