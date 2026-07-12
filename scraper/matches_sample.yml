@@ -1,17 +1,39 @@
 # Muestra para el análisis exploratorio de D39.
 # Rellena "url" con enlaces reales antes de correr `python -m scraper.ingest`.
 #
+# IMPORTANTE: cada partido es un elemento de LISTA — tiene que empezar con "- ".
+# Sin el guion, YAML lo trata como una clave de mapa y, si repites "url:" varias
+# veces, solo se queda con la última (pierde las demás en silencio).
+#
 # Sugerencia de D39: una jornada completa (~10 partidos) + una muestra
 # estratificada con expulsión, penalti(s) y VAR, para cubrir el long tail
 # de match_comment_kind antes de diseñar silver.
 #
 # "slug" es la clave natural en bronze (partido_natural_key): usa algo estable
-# y legible, p. ej. "j1-alaves-barcelona".
+# y legible, p. ej. "j28-alaves-villarreal".
 
 partidos:
-  # --- Jornada completa (rellenar los ~10 partidos de una jornada) ---
-  # - slug: j1-equipo-a-equipo-b
-  #   url: "https://www.laliga.com/partido/..."
+  # --- Jornada 28 completa ---
+  - slug: j28-alaves-villarreal
+    url: "https://www.laliga.com/partido/temporada-2025-2026-laliga-ea-sports-deportivo-alaves-villarreal-cf-28"
+  - slug: j28-girona-athletic
+    url: "https://www.laliga.com/partido/temporada-2025-2026-laliga-ea-sports-girona-fc-athletic-club-28"
+  - slug: j28-atletico-getafe
+    url: "https://www.laliga.com/partido/temporada-2025-2026-laliga-ea-sports-atletico-de-madrid-getafe-cf-28"
+  - slug: j28-oviedo-valencia
+    url: "https://www.laliga.com/partido/temporada-2025-2026-laliga-ea-sports-real-oviedo-valencia-cf-28"
+  - slug: j28-realmadrid-elche
+    url: "https://www.laliga.com/partido/temporada-2025-2026-laliga-ea-sports-real-madrid-elche-cf-28"
+  - slug: j28-mallorca-espanyol
+    url: "https://www.laliga.com/partido/temporada-2025-2026-laliga-ea-sports-rcd-mallorca-rcd-espanyol-de-barcelona-28"
+  - slug: j28-barcelona-sevilla
+    url: "https://www.laliga.com/partido/temporada-2025-2026-laliga-ea-sports-fc-barcelona-sevilla-fc-28"
+  - slug: j28-betis-celta
+    url: "https://www.laliga.com/partido/temporada-2025-2026-laliga-ea-sports-real-betis-rc-celta-28"
+  - slug: j28-realsociedad-osasuna
+    url: "https://www.laliga.com/partido/temporada-2025-2026-laliga-ea-sports-real-sociedad-ca-osasuna-28"
+  - slug: j28-rayo-levante
+    url: "https://www.laliga.com/partido/temporada-2025-2026-laliga-ea-sports-rayo-vallecano-levante-ud-28"
 
   # --- Partidos destacados para cobertura VAR/expulsión/penalti ---
   # Estos dos ya se usaron en el diseño (D4) para confirmar que LaLiga.com

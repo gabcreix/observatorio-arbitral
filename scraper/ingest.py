@@ -30,7 +30,20 @@ def _normalize_match(match) -> dict:
 
 def load_matches(path: Path) -> list[dict]:
     data = yaml.safe_load(path.read_text()) or {}
-    return [_normalize_match(m) for m in (data.get("partidos") or [])]
+    raw = data.get("partidos") or []
+    if isinstance(raw, dict):
+        raise ValueError(
+            f"'partidos:' en {path} salió como diccionario, no como lista de partidos. "
+            "Seguramente falta el '- ' delante de cada partido: si repites 'url:' sin "
+            "guion, YAML lo trata como la misma clave repetida y solo se queda con el "
+            "último valor, perdiendo el resto en silencio. Cada partido debe ir así:\n"
+            "  - slug: mi-slug\n    url: \"https://...\""
+        )
+    matches = [_normalize_match(m) for m in raw]
+    for i, match in enumerate(matches, start=1):
+        if not isinstance(match, dict) or not match.get("url"):
+            raise ValueError(f"Partido #{i} en {path} no tiene 'url' válida: {match!r}")
+    return matches
 
 
 def _safe_filename(slug: str) -> str:
