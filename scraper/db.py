@@ -44,7 +44,7 @@ def upsert_bronze(
 ) -> None:
     conn.execute(
         """
-        insert into bronze (
+        insert into bronze.raw_partido (
             fuente, partido_natural_key, source_url, http_status,
             raw_html, payload_json, extraction_method, error, fetched_at
         )
