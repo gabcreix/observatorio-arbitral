@@ -7,6 +7,7 @@ Uso:
 """
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -20,9 +21,22 @@ DEFAULT_MATCHES_FILE = Path(__file__).parent / "matches_sample.yml"
 FUENTE = "laliga.com"
 
 
+def _normalize_match(match) -> dict:
+    """Acepta tanto '- url' (texto plano) como '- {slug, url}' en matches_sample.yml."""
+    if isinstance(match, str):
+        return {"slug": match, "url": match}
+    return match
+
+
 def load_matches(path: Path) -> list[dict]:
     data = yaml.safe_load(path.read_text()) or {}
-    return data.get("partidos") or []
+    return [_normalize_match(m) for m in (data.get("partidos") or [])]
+
+
+def _safe_filename(slug: str) -> str:
+    """slug puede ser una URL completa si no se dio 'slug' explícito; lo saneamos
+    para que sirva de nombre de fichero en cualquier SO (Windows incluido)."""
+    return re.sub(r"[^A-Za-z0-9_-]+", "-", slug).strip("-")[:150]
 
 
 class FetchResult:
@@ -66,11 +80,12 @@ def dry_run(matches: list[dict], output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     for match in matches:
         result = fetch_and_extract(match)
+        filename = _safe_filename(result.slug)
         if result.raw_html is not None:
-            (output_dir / f"{result.slug}.html").write_text(result.raw_html)
+            (output_dir / f"{filename}.html").write_text(result.raw_html, encoding="utf-8")
         if result.payload_json:
-            (output_dir / f"{result.slug}.json").write_text(
-                json.dumps(result.payload_json, ensure_ascii=False, indent=2)
+            (output_dir / f"{filename}.json").write_text(
+                json.dumps(result.payload_json, ensure_ascii=False, indent=2), encoding="utf-8"
             )
     print(f"Volcado en {output_dir}/ (sin escribir en la base).")
 
