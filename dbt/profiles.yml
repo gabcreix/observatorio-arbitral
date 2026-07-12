@@ -9,8 +9,10 @@
 # (los mismos datos que ya tienes en tu DATABASE_URL de Neon, desglosados —
 # la consola de Neon los muestra por separado en "Connection Details").
 #
-# Con python-dotenv instalado (ya en requirements.txt), puedes usar
-# `dotenv run -- dbt <comando>` para que lea el .env automáticamente.
+# Usa `python run.py <comando>` (en vez de `dbt <comando>` directo) para que
+# el .env se cargue solo — evita depender del CLI `dotenv` (necesita el
+# extra [cli] instalado, y en Windows el ejecutable no siempre cae en el
+# PATH). Ver dbt/run.py.
 
 observatorio_arbitral:
   target: dev
