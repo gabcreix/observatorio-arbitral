@@ -3,6 +3,7 @@
 Uso:
     python -m scraper.ingest --jornada 1                       # descubre y aterriza la jornada 1 (D32)
     python -m scraper.ingest --temporada --only-played         # backfill de toda la temporada (D3/D32)
+    python -m scraper.ingest --recientes --only-played          # captura semanal: últimos 14 días (D32)
     python -m scraper.ingest --temporada --dry-run             # ídem, sin tocar la base
     python -m scraper.ingest                                   # ingesta la lista curada en matches_sample.yml
     python -m scraper.ingest --file otra_muestra.yml
@@ -16,7 +17,7 @@ from pathlib import Path
 import yaml
 
 from . import db
-from .discover import DEFAULT_SEASON, discover_jornada, discover_season
+from .discover import DEFAULT_SEASON, discover_jornada, discover_recent, discover_season
 from .extract import extract_json_blobs, pick_extraction_method
 from .fetch import fetch
 
@@ -113,9 +114,12 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--jornada", type=int, help="Descubre los partidos de esta jornada (D30/D32), en vez de leer --file.")
     parser.add_argument("--temporada", action="store_true",
                          help="Descubre y aterriza TODAS las jornadas de la temporada (backfill completo, D3/D32).")
+    parser.add_argument("--recientes", action="store_true",
+                         help="Descubre jornadas de los últimos --dias días (captura semanal, D32).")
+    parser.add_argument("--dias", type=int, default=14, help="Con --recientes: ventana en días hacia atrás.")
     parser.add_argument("--season", default=DEFAULT_SEASON)
     parser.add_argument("--only-played", action="store_true",
-                         help="Con --jornada/--temporada: descarta partidos con status != FullTime.")
+                         help="Con --jornada/--temporada/--recientes: descarta partidos con status != FullTime.")
     parser.add_argument("--dry-run", action="store_true", help="No escribe en la base; vuelca HTML/JSON a --output-dir.")
     parser.add_argument("--output-dir", type=Path, default=Path("bronze_dryrun"))
     args = parser.parse_args(argv)
@@ -123,6 +127,9 @@ def main(argv: list[str] | None = None) -> None:
     if args.temporada:
         matches = discover_season(season=args.season, only_played=args.only_played)
         print(f"{len(matches)} partidos descubiertos para toda la temporada {args.season}.")
+    elif args.recientes:
+        matches = discover_recent(season=args.season, days_back=args.dias, only_played=args.only_played)
+        print(f"{len(matches)} partidos descubiertos en los últimos {args.dias} días ({args.season}).")
     elif args.jornada is not None:
         matches = discover_jornada(args.jornada, season=args.season)
         if args.only_played:
@@ -132,7 +139,8 @@ def main(argv: list[str] | None = None) -> None:
         matches = load_matches(args.file)
 
     if not matches:
-        print(f"No hay partidos que ingerir (jornada={args.jornada}, temporada={args.temporada}, file={args.file}).")
+        print(f"No hay partidos que ingerir (jornada={args.jornada}, temporada={args.temporada}, "
+              f"recientes={args.recientes}, file={args.file}).")
         sys.exit(1)
 
     if args.dry_run:

@@ -10,6 +10,7 @@ Formato de URL confirmado a mano (ver docs/d39-anatomia-feed.md):
     https://www.laliga.com/laliga-easports/resultados/{season}/jornada-{week}
 """
 import argparse
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import yaml
@@ -82,6 +83,36 @@ def discover_season(*, season: str = DEFAULT_SEASON, only_played: bool = False) 
     return all_matches
 
 
+def discover_recent(*, season: str = DEFAULT_SEASON, days_back: int = 14, only_played: bool = True) -> list[dict]:
+    """Descubre partidos de las jornadas "recientes" (pensado para el workflow
+    programado semanal, D32).
+
+    La fecha decide QUÉ jornadas mirar: las que empezaron dentro de los
+    últimos `days_back` días, en vez de razonar en "jornada actual ± 1" (frágil
+    si un partido se aplaza varias semanas). El `status` de cada partido
+    ("FullTime" o no) decide QUÉ partidos se consideran ya jugados — la fecha
+    de kickoff, por sí sola, no garantiza que el partido haya terminado
+    (retrasos, suspensión...).
+    """
+    gameweeks = discover_gameweek_list(season=season)
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=days_back)
+
+    relevant_weeks = [
+        gw["week"] for gw in gameweeks
+        if cutoff <= datetime.fromisoformat(gw["date"].replace("Z", "+00:00")) <= now
+    ]
+
+    all_matches: list[dict] = []
+    for week in relevant_weeks:
+        matches = discover_jornada(week, season=season)
+        if only_played:
+            matches = [m for m in matches if m["status"] == "FullTime"]
+        print(f"  jornada {week}: {len(matches)} partidos")
+        all_matches.extend(matches)
+    return all_matches
+
+
 def _to_yaml_matches(matches: list[dict]) -> dict:
     return {
         "partidos": [
@@ -96,6 +127,8 @@ def main(argv: list[str] | None = None) -> None:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--week", type=int, help="Número de jornada (1-38).")
     group.add_argument("--temporada", action="store_true", help="Descubre TODAS las jornadas de la temporada.")
+    group.add_argument("--recientes", action="store_true", help="Descubre jornadas de los últimos --dias días.")
+    parser.add_argument("--dias", type=int, default=14, help="Con --recientes: ventana en días hacia atrás.")
     parser.add_argument("--season", default=DEFAULT_SEASON)
     parser.add_argument("--only-played", action="store_true", help="Filtra a status == FullTime.")
     parser.add_argument("--write-yaml", type=Path, help="Escribe el resultado en formato matches_sample.yml.")
@@ -103,14 +136,18 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.temporada:
         matches = discover_season(season=args.season, only_played=args.only_played)
+        label = "toda la temporada"
+    elif args.recientes:
+        matches = discover_recent(season=args.season, days_back=args.dias, only_played=args.only_played)
+        label = f"los últimos {args.dias} días"
     else:
         matches = discover_jornada(args.week, season=args.season)
         if args.only_played:
             matches = [m for m in matches if m["status"] == "FullTime"]
+        label = f"la jornada {args.week}"
 
     for m in matches:
         print(f"{m['slug']:<70} status={m['status']}")
-    label = "toda la temporada" if args.temporada else f"la jornada {args.week}"
     print(f"\n{len(matches)} partidos encontrados para {label} ({args.season}).")
 
     if args.write_yaml:
