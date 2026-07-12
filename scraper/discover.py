@@ -64,6 +64,24 @@ def discover_gameweek_list(*, season: str = DEFAULT_SEASON) -> list[dict]:
     return page_props.get("gameweekList") or []
 
 
+def discover_season(*, season: str = DEFAULT_SEASON, only_played: bool = False) -> list[dict]:
+    """Descubre TODOS los partidos de la temporada, jornada a jornada (D3/D32).
+
+    Pensado para reutilizarse tal cual como cuerpo del workflow de backfill
+    manual de GitHub Actions (D32): mismo comando, mismos argumentos.
+    """
+    gameweeks = discover_gameweek_list(season=season)
+    all_matches: list[dict] = []
+    for gw in gameweeks:
+        week = gw["week"]
+        matches = discover_jornada(week, season=season)
+        if only_played:
+            matches = [m for m in matches if m["status"] == "FullTime"]
+        print(f"  jornada {week}: {len(matches)} partidos")
+        all_matches.extend(matches)
+    return all_matches
+
+
 def _to_yaml_matches(matches: list[dict]) -> dict:
     return {
         "partidos": [
@@ -75,19 +93,25 @@ def _to_yaml_matches(matches: list[dict]) -> dict:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--week", type=int, required=True, help="Número de jornada (1-38).")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--week", type=int, help="Número de jornada (1-38).")
+    group.add_argument("--temporada", action="store_true", help="Descubre TODAS las jornadas de la temporada.")
     parser.add_argument("--season", default=DEFAULT_SEASON)
     parser.add_argument("--only-played", action="store_true", help="Filtra a status == FullTime.")
     parser.add_argument("--write-yaml", type=Path, help="Escribe el resultado en formato matches_sample.yml.")
     args = parser.parse_args(argv)
 
-    matches = discover_jornada(args.week, season=args.season)
-    if args.only_played:
-        matches = [m for m in matches if m["status"] == "FullTime"]
+    if args.temporada:
+        matches = discover_season(season=args.season, only_played=args.only_played)
+    else:
+        matches = discover_jornada(args.week, season=args.season)
+        if args.only_played:
+            matches = [m for m in matches if m["status"] == "FullTime"]
 
     for m in matches:
         print(f"{m['slug']:<70} status={m['status']}")
-    print(f"\n{len(matches)} partidos encontrados para la jornada {args.week} ({args.season}).")
+    label = "toda la temporada" if args.temporada else f"la jornada {args.week}"
+    print(f"\n{len(matches)} partidos encontrados para {label} ({args.season}).")
 
     if args.write_yaml:
         args.write_yaml.write_text(
