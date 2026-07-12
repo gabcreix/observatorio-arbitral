@@ -7,6 +7,28 @@ las corrige. No sustituye a esos documentos: se lee junto a ellos.*
 
 ---
 
+## 0. Descubrimiento de partidos (hueco fuera de D1–D39, resuelto en implementación)
+
+Ninguna decisión de diseño cubría cómo averiguar **qué partidos existen** para
+una jornada — D30 solo resuelve cómo leer una página de partido ya conocida.
+Confirmado a mano: la página de resultados de LaLiga.com sigue la misma
+técnica ya decidida (HTTP + `__NEXT_DATA__`), solo que en otra página:
+
+```
+https://www.laliga.com/laliga-easports/resultados/{season}/jornada-{week}
+  → pageProps.matches[]        # slug, status, equipos — un slug por partido
+  → pageProps.gameweekList[]   # las 38 jornadas de la temporada (id, week, date)
+```
+
+El `slug` de cada partido en `matches[]` es exactamente el mismo que arma la
+URL de detalle (`https://www.laliga.com/partido/{slug}`), y `status` distingue
+partidos ya jugados (`FullTime`) de los pendientes. Esto habilita el backfill
+"troceable por jornadas" que pedía D32 sin curación manual: implementado en
+`scraper/discover.py` (`discover_jornada`) y enganchado en
+`scraper/ingest.py --jornada N`.
+
+---
+
 ## 1. Dónde vive todo
 
 El JSON completo está en `<script id="__NEXT_DATA__" type="application/json">` →

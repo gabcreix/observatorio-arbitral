@@ -1,8 +1,9 @@
-"""CLI de ingesta — aterriza la muestra de D39 en bronze.
+"""CLI de ingesta — aterriza partidos en bronze.
 
 Uso:
-    python -m scraper.ingest                          # ingesta real contra Neon
-    python -m scraper.ingest --dry-run                 # sin tocar la base; vuelca a disco
+    python -m scraper.ingest --jornada 1                # descubre y aterriza la jornada 1 (D32)
+    python -m scraper.ingest --jornada 1 --dry-run       # ídem, sin tocar la base
+    python -m scraper.ingest                             # ingesta la lista curada en matches_sample.yml
     python -m scraper.ingest --file otra_muestra.yml
 """
 import argparse
@@ -14,6 +15,7 @@ from pathlib import Path
 import yaml
 
 from . import db
+from .discover import DEFAULT_SEASON, discover_jornada
 from .extract import extract_json_blobs, pick_extraction_method
 from .fetch import fetch
 
@@ -105,14 +107,25 @@ def dry_run(matches: list[dict], output_dir: Path) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--file", type=Path, default=DEFAULT_MATCHES_FILE)
+    parser.add_argument("--file", type=Path, default=DEFAULT_MATCHES_FILE,
+                         help="Lista curada de partidos (ignorado si se usa --jornada).")
+    parser.add_argument("--jornada", type=int, help="Descubre los partidos de esta jornada (D30/D32), en vez de leer --file.")
+    parser.add_argument("--season", default=DEFAULT_SEASON)
+    parser.add_argument("--only-played", action="store_true", help="Con --jornada: descarta partidos con status != FullTime.")
     parser.add_argument("--dry-run", action="store_true", help="No escribe en la base; vuelca HTML/JSON a --output-dir.")
     parser.add_argument("--output-dir", type=Path, default=Path("bronze_dryrun"))
     args = parser.parse_args(argv)
 
-    matches = load_matches(args.file)
+    if args.jornada is not None:
+        matches = discover_jornada(args.jornada, season=args.season)
+        if args.only_played:
+            matches = [m for m in matches if m["status"] == "FullTime"]
+        print(f"{len(matches)} partidos descubiertos para la jornada {args.jornada} ({args.season}).")
+    else:
+        matches = load_matches(args.file)
+
     if not matches:
-        print(f"No hay partidos en {args.file}. Rellénalo con URLs reales (ver D39: jornada + expulsión/penalti/VAR).")
+        print(f"No hay partidos que ingerir (jornada={args.jornada}, file={args.file}).")
         sys.exit(1)
 
     if args.dry_run:
