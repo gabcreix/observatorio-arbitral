@@ -1,0 +1,149 @@
+version: 2
+
+# Un "test" de dbt declarado aquí (not_null, unique, accepted_values...) es
+# una consulta que dbt genera solo y corre con `dbt test`; si devuelve
+# filas, el test falla. Es la parte declarativa de D26 (bloque 5, §2.3).
+
+models:
+  - name: equipo
+    columns:
+      - name: equipo_id
+        tests: [not_null, unique]
+      - name: nombre_canonico
+        tests: [not_null, unique]
+
+  - name: arbitro
+    columns:
+      - name: arbitro_id
+        tests: [not_null, unique]
+      - name: nombre_canonico
+        tests: [not_null, unique]
+
+  - name: jugador
+    columns:
+      - name: jugador_id
+        tests: [not_null, unique]
+      - name: nombre_canonico
+        tests: [not_null, unique]
+
+  - name: temporada
+    columns:
+      - name: temporada_id
+        tests: [not_null, unique]
+      - name: etiqueta
+        tests: [not_null, unique]
+
+  - name: partido
+    description: >
+      arbitro_principal_id puede ser NULL: D39 encontró ~4% de partidos sin
+      persons_role en el feed (bronce lo trae null) — gap real de la fuente,
+      no un fallo de extracción. No lleva test not_null a propósito.
+    columns:
+      - name: partido_id
+        tests: [not_null, unique]
+      - name: temporada_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('temporada')
+                field: temporada_id
+      - name: jornada
+        tests: [not_null]
+      - name: equipo_local_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('equipo')
+                field: equipo_id
+      - name: equipo_visitante_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('equipo')
+                field: equipo_id
+
+  - name: tarjeta
+    columns:
+      - name: tarjeta_id
+        tests: [not_null, unique]
+      - name: laliga_event_id
+        description: Clave natural real del evento (id de Opta) — más fiable que (partido, jugador, tipo, minuto).
+        tests: [not_null, unique]
+      - name: partido_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('partido')
+                field: partido_id
+      - name: tipo
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['amarilla', 'segunda_amarilla', 'roja_directa']
+      - name: minuto
+        tests: [not_null]
+
+  - name: penalti
+    columns:
+      - name: penalti_id
+        tests: [not_null, unique]
+      - name: laliga_event_id
+        tests: [not_null, unique]
+      - name: partido_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('partido')
+                field: partido_id
+      - name: equipo_a_favor_id
+        tests: [not_null]
+      - name: equipo_en_contra_id
+        tests: [not_null]
+      - name: minuto
+        tests: [not_null]
+
+  - name: anadido_partido
+    columns:
+      - name: partido_id
+        tests: [not_null, unique]
+
+  - name: faltas_equipo_partido
+    columns:
+      - name: partido_id
+        tests: [not_null]
+      - name: equipo_id
+        tests: [not_null]
+      - name: n_faltas
+        tests: [not_null]
+
+  - name: evento_var
+    columns:
+      - name: evento_var_id
+        tests: [not_null, unique]
+      - name: laliga_event_id
+        tests: [not_null, unique]
+      - name: partido_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('partido')
+                field: partido_id
+      - name: tipo_decision_revisada
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['gol', 'penalti', 'tarjeta']
+      - name: resultado
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['confirma', 'modifica']

@@ -6,3 +6,7 @@ bronze_dryrun/
 inspect_dump.json
 inspect_dump.html
 .pytest_cache/
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+dbt/.user.yml

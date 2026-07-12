@@ -1,0 +1,27 @@
+# Perfil de conexión de dbt (bloque 5, §3.2 — sin fichero de secretos en el
+# repo: aquí no hay ninguna credencial literal, todo viene de variables de
+# entorno vía env_var()). Vive en dbt/ (no en ~/.dbt/) por eso los comandos
+# dbt deben correrse con --profiles-dir . (o DBT_PROFILES_DIR=. ) desde esta
+# carpeta.
+#
+# Variables de entorno esperadas (ver .env.example en la raíz del repo):
+#   PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE
+# (los mismos datos que ya tienes en tu DATABASE_URL de Neon, desglosados —
+# la consola de Neon los muestra por separado en "Connection Details").
+#
+# Con python-dotenv instalado (ya en requirements.txt), puedes usar
+# `dotenv run -- dbt <comando>` para que lea el .env automáticamente.
+
+observatorio_arbitral:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('PGHOST') }}"
+      port: "{{ env_var('PGPORT', '5432') | int }}"
+      user: "{{ env_var('PGUSER') }}"
+      password: "{{ env_var('PGPASSWORD') }}"
+      dbname: "{{ env_var('PGDATABASE') }}"
+      schema: silver
+      threads: 4
+      sslmode: "{{ env_var('PGSSLMODE', 'require') }}"

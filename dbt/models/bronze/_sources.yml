@@ -1,0 +1,25 @@
+version: 2
+
+# Un "source" en dbt es cómo se declara, de forma explícita y testeable, una
+# tabla que dbt NO construye — la escribe otra cosa (aquí, el scraper). D27:
+# la transformación lee de bronze, nunca invoca al scraper; sources.yml es
+# justo esa frontera hecha configuración.
+sources:
+  - name: bronze
+    schema: bronze
+    tables:
+      - name: raw_partido
+        description: >
+          Copia cruda de cada partido tal y como lo devuelve LaLiga.com (el
+          payload completo del __NEXT_DATA__), aterrizada por el scraper
+          (D18 tonto, D27 frontera, D28 medio físico). Una fila por partido,
+          upsert idempotente por (fuente, partido_natural_key).
+        columns:
+          - name: partido_natural_key
+            description: Slug de LaLiga.com — clave natural del partido en bronze.
+            tests:
+              - not_null
+          - name: payload_json
+            description: >
+              JSON completo (next_data.props.pageProps) — ver
+              docs/d39-anatomia-feed.md para la anatomía completa.
