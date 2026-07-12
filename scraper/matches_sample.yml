@@ -1,0 +1,25 @@
+# Muestra para el análisis exploratorio de D39.
+# Rellena "url" con enlaces reales antes de correr `python -m scraper.ingest`.
+#
+# Sugerencia de D39: una jornada completa (~10 partidos) + una muestra
+# estratificada con expulsión, penalti(s) y VAR, para cubrir el long tail
+# de match_comment_kind antes de diseñar silver.
+#
+# "slug" es la clave natural en bronze (partido_natural_key): usa algo estable
+# y legible, p. ej. "j1-alaves-barcelona".
+
+partidos:
+  # --- Jornada completa (rellenar los ~10 partidos de una jornada) ---
+  # - slug: j1-equipo-a-equipo-b
+  #   url: "https://www.laliga.com/partido/..."
+
+  # --- Partidos destacados para cobertura VAR/expulsión/penalti ---
+  # Estos dos ya se usaron en el diseño (D4) para confirmar que LaLiga.com
+  # expone eventos VAR tipados (goles anulados, revocación de tarjeta,
+  # confirmación tras revisión). Localiza sus URLs reales y complétalas aquí.
+  # - slug: rayo-real-sociedad
+  #   url: "https://www.laliga.com/partido/..."
+  #   nota: "usado en D4 para confirmar eventos VAR tipados"
+  # - slug: atletico-barcelona
+  #   url: "https://www.laliga.com/partido/..."
+  #   nota: "usado en D4 para confirmar eventos VAR tipados"

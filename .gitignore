@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+bronze_dryrun/
+inspect_dump.json
+inspect_dump.html
+.pytest_cache/
