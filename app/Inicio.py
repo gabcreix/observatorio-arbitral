@@ -46,13 +46,15 @@ if mediana_col and ranking[mediana_col].notna().any():
         "(Referencia mostrada solo en métricas de volumen — D15.)"
     )
 
-# D37: etiqueta contextual breve en el ranking VAR.
+# D37: etiqueta contextual breve en el ranking VAR, con enlace a la
+# explicación completa (requisito duro del MVP, no opcional).
 if metrica_label == "Decisiones VAR con impacto":
     st.info(
         "Cuenta solo decisiones VAR que **modificaron** la decisión de campo, no el total de "
         "revisiones. No incluye los *checks* silenciosos de cabina (no están en la fuente). "
         "Se atribuye siempre al árbitro principal, no al árbitro VAR."
     )
+    st.page_link("pages/2_Metodologia.py", label="Ver metodología completa", icon="📖")
 
 st.divider()
 st.caption("Elige un árbitro en **Ficha del árbitro** (barra lateral) para ver su perfil completo.")
