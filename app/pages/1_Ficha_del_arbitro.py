@@ -22,16 +22,19 @@ arbitro_id = fila["arbitro_id"]
 st.subheader(seleccion)
 st.metric("Partidos dirigidos", int(fila["partidos_dirigidos"]))
 
-# P2: retrato completo en total y tasa/partido, partidos dirigidos siempre a la vista (D11/D12).
+# P2: retrato completo en total y tasa/partido, partidos dirigidos siempre
+# a la vista (D11/D12). delta_color="off" porque esto es una cifra
+# informativa (la tasa), no una tendencia — con el color por defecto,
+# Streamlit lo pinta en verde con flecha arriba como si fuera un aumento.
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Amarillas", int(fila["total_amarillas"]), f"{fila['tasa_amarillas']}/partido")
-col2.metric("Segundas amarillas", int(fila["total_segundas_amarillas"]), f"{fila['tasa_segundas_amarillas']}/partido")
-col3.metric("Rojas directas", int(fila["total_rojas_directas"]), f"{fila['tasa_rojas_directas']}/partido")
-col4.metric("Penaltis señalados", int(fila["total_penaltis"]), f"{fila['tasa_penaltis']}/partido")
+col1.metric("Amarillas", int(fila["total_amarillas"]), f"{fila['tasa_amarillas']}/partido", delta_color="off")
+col2.metric("Segundas amarillas", int(fila["total_segundas_amarillas"]), f"{fila['tasa_segundas_amarillas']}/partido", delta_color="off")
+col3.metric("Rojas directas", int(fila["total_rojas_directas"]), f"{fila['tasa_rojas_directas']}/partido", delta_color="off")
+col4.metric("Penaltis señalados", int(fila["total_penaltis"]), f"{fila['tasa_penaltis']}/partido", delta_color="off")
 
 col5, col6 = st.columns(2)
-col5.metric("Faltas pitadas", int(fila["total_faltas"]), f"{fila['tasa_faltas']}/partido")
-col6.metric("Decisiones VAR con impacto", int(fila["decisiones_var_con_impacto"]), f"{fila['tasa_var_con_impacto']}/partido")
+col5.metric("Faltas pitadas", int(fila["total_faltas"]), f"{fila['tasa_faltas']}/partido", delta_color="off")
+col6.metric("Decisiones VAR con impacto", int(fila["decisiones_var_con_impacto"]), f"{fila['tasa_var_con_impacto']}/partido", delta_color="off")
 
 st.divider()
 st.subheader("Desglose por equipo")
