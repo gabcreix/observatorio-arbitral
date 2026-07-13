@@ -4,6 +4,7 @@
 
 select
     p.partido_id,
+    p.temporada_id,
     p.slug,
     p.jornada,
     p.fecha,
