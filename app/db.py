@@ -12,15 +12,23 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 def _database_url() -> str:
     try:
-        return st.secrets["DATABASE_URL"]
+        url = st.secrets["DATABASE_URL"]
     except Exception:
-        pass
-    url = os.environ.get("DATABASE_URL")
+        url = os.environ.get("DATABASE_URL")
     if not url:
         raise RuntimeError(
             "DATABASE_URL no está definida (ni en .env de la raíz del repo, "
             "ni en .streamlit/secrets.toml)."
         )
+    # SQLAlchemy interpreta "postgresql://" a secas como "usa psycopg2" (el
+    # driver clásico). Instalamos psycopg (v3), así que hay que decírselo
+    # explícito con el dialecto +psycopg — si no, falla con
+    # ModuleNotFoundError: psycopg2 en cuanto se despliega donde no esté
+    # instalado por casualidad.
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+    elif url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+psycopg://", 1)
     return url
 
 
