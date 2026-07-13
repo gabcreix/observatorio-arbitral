@@ -1,0 +1,7 @@
+httpx
+psycopg[binary]
+beautifulsoup4
+lxml
+pyyaml
+python-dotenv
+pytest

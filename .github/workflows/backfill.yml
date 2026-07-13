@@ -1,0 +1,64 @@
+name: Backfill
+
+# D32: workflow manual (workflow_dispatch) para backfill de temporada,
+# troceable por jornadas. Nunca se dispara solo — siempre a mano, desde la
+# pestaña Actions de GitHub, eligiendo modo/jornada/temporada.
+
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "temporada completa o una jornada suelta"
+        required: true
+        default: "temporada"
+        type: choice
+        options:
+          - temporada
+          - jornada
+      jornada:
+        description: "Número de jornada (solo si modo = jornada)"
+        required: false
+        default: ""
+      season:
+        description: "Temporada, formato 2025-26"
+        required: false
+        default: "2025-26"
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias del scraper
+        run: pip install -r requirements.txt
+
+      - name: Ingesta — temporada completa
+        if: inputs.modo == 'temporada'
+        run: python -m scraper.ingest --temporada --only-played --season "${{ inputs.season }}"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Ingesta — jornada suelta
+        if: inputs.modo == 'jornada'
+        run: python -m scraper.ingest --jornada "${{ inputs.jornada }}" --only-played --season "${{ inputs.season }}"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Instalar dbt
+        run: pip install -r dbt/requirements.txt
+
+      - name: dbt build (silver + gold + tests)
+        working-directory: dbt
+        run: dbt build --profiles-dir .
+        env:
+          PGHOST: ${{ secrets.PGHOST }}
+          PGPORT: ${{ secrets.PGPORT }}
+          PGUSER: ${{ secrets.PGUSER }}
+          PGPASSWORD: ${{ secrets.PGPASSWORD }}
+          PGDATABASE: ${{ secrets.PGDATABASE }}
+          PGSSLMODE: ${{ secrets.PGSSLMODE }}

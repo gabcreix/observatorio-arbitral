@@ -1,0 +1,30 @@
+name: 'observatorio_arbitral'
+version: '1.0.0'
+config-version: 2
+
+profile: 'observatorio_arbitral'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+# D22: gold son vistas SQL, no materializadas. Silver son tablas (D16: PK
+# surrogate + UNIQUE natural) porque los hechos se recalculan desde bronze,
+# no tiene sentido recomputar el JSONB de bronze en cada consulta de la app.
+models:
+  observatorio_arbitral:
+    bronze:
+      # Capa de extracción intermedia (JSONB -> columnas tipadas + arrays
+      # desanidados). No es la tabla bronze del scraper (esa es un source,
+      # no algo que dbt construya) — es la "traducción" previa a silver.
+      # Vive en su propio schema Postgres (staging) para no chocar con el
+      # schema "bronze" real del scraper.
+      +schema: staging
+      +materialized: view
+    silver:
+      +schema: silver
+      +materialized: table
+    gold:
+      +schema: gold
+      +materialized: view
